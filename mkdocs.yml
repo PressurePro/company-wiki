@@ -1,5 +1,5 @@
 site_name: PressurePro Technical Documentation
-site_url: https://techdocs.pressurepro.com
+site_url: https://pressurepro.github.io/company-wiki/
 theme:
   name: material
   palette:
