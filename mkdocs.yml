@@ -1,0 +1,29 @@
+site_name: PressurePro Technical Documentation
+site_url: https://techdocs.pressurepro.com
+theme:
+  name: material
+  palette:
+    scheme: default
+nav:
+  - Home: index.md
+  - Software Products:
+    - Connect: software/connect.md
+    - Connect API: software/connect-api.md
+    - Driver TPMS: software/driver-tpms.md
+    - Fleet Tech App: software/fleet-tech-app.md
+    - Changelogs:
+      - Connect Changelog: software/changelog/connect-changelog.md
+      - Driver TPMS Changelog: software/changelog/driver-tpms-changelog.md
+      - Fleet Tech App Changelog: software/changelog/fleet-tech-app-changelog.md
+  - Hardware Products:
+    - Gateway: hardware/gateway.md
+    - Sensors: hardware/sensors.md
+    - Cables:
+      - 202PD: hardware/cables/202pd.md
+      - Teltonika / Pulse: hardware/cables/teltonika-pulse.md
+      - Teltonika / 12-Pin: hardware/cables/teltonika-12pin.md
+    - Wifi Yard Reader: hardware/wifi-yard-reader.md
+  - Technical Resources:
+    - FlexIO: technical-docs/flexio.md
+    - UART-LNK: technical-docs/uart-lnk.md
+
