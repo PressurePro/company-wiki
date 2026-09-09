@@ -38,3 +38,4 @@ nav:
   - Technical Resources:
     - FlexIO: technical-docs/flexio.md
     - UART-LNK: technical-docs/uart-lnk.md
+    - Sending TPMS Readings to IQ (Python): technical-docs/ingest-sensor-readings-python.md
