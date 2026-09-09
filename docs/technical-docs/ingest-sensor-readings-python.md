@@ -10,7 +10,7 @@ For the full endpoint reference (schemas, auth, and interactive Try-it-out), see
 | --- | --- |
 | **API key** | PressurePro will create an External API key for your company and send it to you directly. Treat it like a password; do not commit it to source control or share it publicly. |
 | **Device serial number** | The reader / bridge device identifier agreed with PressurePro (`deviceSerialNumber` in the request body). |
-| **API base URL** | Stage: `https://stg.api.pressurepro.us` · Production: `https://prd.api.pressurepro.us` |
+| **API base URL** | `https://prd.api.pressurepro.us` |
 | **Bridge** | An RS-232-to-Ethernet converter that exposes the TPMS receiver UART stream over TCP (typical baud rate: **38400**, 8N1). |
 | **Python 3.9+** | And the `requests` package (`pip install requests`). |
 
@@ -119,7 +119,7 @@ from typing import Optional
 import requests
 
 # --- Configuration (replace with your values) ---
-API_BASE_URL = os.environ.get("PP_API_BASE_URL", "https://stg.api.pressurepro.us")
+API_BASE_URL = os.environ.get("PP_API_BASE_URL", "https://prd.api.pressurepro.us")
 API_KEY = os.environ["PP_API_KEY"]  # provided directly by PressurePro
 DEVICE_SERIAL = os.environ.get("PP_DEVICE_SERIAL", "R15334")
 
@@ -262,7 +262,7 @@ if __name__ == "__main__":
 
 ```bash
 export PP_API_KEY="your-api-key-from-pressurepro"
-export PP_API_BASE_URL="https://stg.api.pressurepro.us"   # switch to prod when ready
+export PP_API_BASE_URL="https://prd.api.pressurepro.us"
 export PP_DEVICE_SERIAL="R15334"
 export PP_BRIDGE_HOST="192.168.1.50"
 export PP_BRIDGE_PORT="4001"
@@ -270,8 +270,6 @@ export PP_BRIDGE_PORT="4001"
 pip install requests
 python ingest_sensor_readings.py
 ```
-
-Start on **stage** until you confirm readings appear correctly in IQ, then point `PP_API_BASE_URL` at production.
 
 ## Bridge tips
 
@@ -294,4 +292,4 @@ Start on **stage** until you confirm readings appear correctly in IQ, then point
 ## Next steps
 
 - Exercise the same endpoint from the browser via the [External API (IQ)](../software/external-api/index.md) Swagger UI (Authorize with your key).
-- Contact your PressurePro representative if you need a stage key, a production key, or a confirmed `deviceSerialNumber` for your installation.
+- Contact your PressurePro representative if you need an API key or a confirmed `deviceSerialNumber` for your installation.
