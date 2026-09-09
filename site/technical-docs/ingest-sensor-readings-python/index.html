@@ -812,7 +812,7 @@
 </tr>
 <tr>
 <td><strong>API base URL</strong></td>
-<td>Stage: <code>https://stg.api.pressurepro.us</code> · Production: <code>https://prd.api.pressurepro.us</code></td>
+<td><code>https://prd.api.pressurepro.us</code></td>
 </tr>
 <tr>
 <td><strong>Bridge</strong></td>
@@ -995,7 +995,7 @@ from typing import Optional
 import requests
 
 # --- Configuration (replace with your values) ---
-API_BASE_URL = os.environ.get(&quot;PP_API_BASE_URL&quot;, &quot;https://stg.api.pressurepro.us&quot;)
+API_BASE_URL = os.environ.get(&quot;PP_API_BASE_URL&quot;, &quot;https://prd.api.pressurepro.us&quot;)
 API_KEY = os.environ[&quot;PP_API_KEY&quot;]  # provided directly by PressurePro
 DEVICE_SERIAL = os.environ.get(&quot;PP_DEVICE_SERIAL&quot;, &quot;R15334&quot;)
 
@@ -1135,7 +1135,7 @@ if __name__ == &quot;__main__&quot;:
 </code></pre>
 <h3 id="running-it">Running it</h3>
 <pre><code class="language-bash">export PP_API_KEY=&quot;your-api-key-from-pressurepro&quot;
-export PP_API_BASE_URL=&quot;https://stg.api.pressurepro.us&quot;   # switch to prod when ready
+export PP_API_BASE_URL=&quot;https://prd.api.pressurepro.us&quot;
 export PP_DEVICE_SERIAL=&quot;R15334&quot;
 export PP_BRIDGE_HOST=&quot;192.168.1.50&quot;
 export PP_BRIDGE_PORT=&quot;4001&quot;
@@ -1143,7 +1143,6 @@ export PP_BRIDGE_PORT=&quot;4001&quot;
 pip install requests
 python ingest_sensor_readings.py
 </code></pre>
-<p>Start on <strong>stage</strong> until you confirm readings appear correctly in IQ, then point <code>PP_API_BASE_URL</code> at production.</p>
 <h2 id="bridge-tips">Bridge tips</h2>
 <ul>
 <li>Confirm the bridge is in <strong>TCP server</strong> mode (your script is the client) or adjust the script if your device expects the opposite.</li>
@@ -1165,7 +1164,7 @@ python ingest_sensor_readings.py
 <h2 id="next-steps">Next steps</h2>
 <ul>
 <li>Exercise the same endpoint from the browser via the <a href="../../software/external-api/">External API (IQ)</a> Swagger UI (Authorize with your key).</li>
-<li>Contact your PressurePro representative if you need a stage key, a production key, or a confirmed <code>deviceSerialNumber</code> for your installation.</li>
+<li>Contact your PressurePro representative if you need an API key or a confirmed <code>deviceSerialNumber</code> for your installation.</li>
 </ul>
 
 

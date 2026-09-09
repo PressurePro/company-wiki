@@ -2,9 +2,11 @@
 
 Interactive Swagger UI for the PressurePro IQ External API.
 
-**Base URLs:** stage `https://stg.api.pressurepro.us` · prod `https://prd.api.pressurepro.us`  
+**Base URL:** `https://prd.api.pressurepro.us`  
 **Auth:** `Authorization: Bearer <external-api-key>`
 
-This page documents **live** gateway routes only. Try “Authorize” in Swagger UI with a stage/prod external key to exercise requests from the browser (CORS permitting).
+Use **Authorize** in Swagger UI with your external API key to try requests from the browser (CORS permitting). PressurePro will provide your API key directly.
+
+For a Python walkthrough of ingesting TPMS readings, see [Sending TPMS Readings to IQ (Python)](../../technical-docs/ingest-sensor-readings-python.md).
 
 <swagger-ui src="./openapi.yaml"/>

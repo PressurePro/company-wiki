@@ -6,25 +6,15 @@ info:
 
     **Auth:** every secured route requires `Authorization: Bearer <external-api-key>`.
     Tenant scope is inferred from the key — do **not** pass an acting-as `companyId`.
-
-    **Import into Bruno:** Collection → Import → OpenAPI → select this file.
-    Set environment variables `baseUrl` and `bearerToken` (or edit the server URL + Auth).
-
-    **Scope:** this file documents **live** routes only. Each operation is tagged
-    `x-implementation-status: live`.
   version: 1.0.0
   contact:
-    name: PressurePro Platform
-
+    name: PressurePro
 servers:
-  - url: https://stg.api.pressurepro.us
-    description: Stage
   - url: https://prd.api.pressurepro.us
     description: Production
-
 tags:
   - name: Health
-    description: Unauthenticated gateway probe
+    description: Unauthenticated API health check
   - name: Company
     description: Company hierarchy within the API key scope
   - name: Units
@@ -49,14 +39,13 @@ paths:
   /health:
     get:
       tags: [Health]
-      summary: Gateway health
+      summary: API health
       description: Unauthenticated health check. Useful to confirm the API is reachable.
       operationId: getHealth
-      x-implementation-status: live
       security: []
       responses:
         "200":
-          description: Gateway reachable
+          description: API reachable
           content:
             application/json:
               schema:
@@ -74,7 +63,6 @@ paths:
         Paginated list of companies accessible to the API key (key company + descendants).
         Optional `ids` may select child companies in hierarchy (resource selection, not acting-as).
       operationId: listCompanies
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -122,7 +110,6 @@ paths:
         Paginated unit summaries in the API key hierarchy.
         Only units with status Active or Parked are included.
       operationId: listUnits
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - name: status
@@ -165,13 +152,108 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+    patch:
+      tags: [Units]
+      summary: Activate or park one unit
+      description: |
+        Identify exactly one unit with `unitId` or `name`, and set `action` to
+        `activate` or `park`. Passing both `action` values is a `400`.
+
+        **Activate vehicle** (Vehicle/Other): require a free `deviceId` or `deviceSerial`.
+        **Activate trailer:** attach to an already-active vehicle via `targetId`/`targetName`,
+        or via `deviceId`/`deviceSerial` of a device that already has an active vehicle.
+        **Park vehicle:** parks the vehicle and attached trailers (`data` lists all of them).
+        **Park trailer:** parks only that trailer.
+
+        Already Active + activate, or already Parked + park: `200` with `changed: false`.
+      operationId: patchUnit
+      parameters:
+        - name: unitId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Unit id (exactly one of unitId or name)
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Unit name, case-insensitive (exactly one of unitId or name)
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [activate, park]
+        - name: deviceId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Device id (vehicle activate = free device; trailer activate = occupied device)
+        - name: deviceSerial
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Device serial (alternative to deviceId)
+        - name: targetId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Active vehicle id (trailer activate only)
+        - name: targetName
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Active vehicle name (trailer activate only)
+      responses:
+        "200":
+          description: Unit(s) after activate or park
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchUnitsResult"
+              examples:
+                parkTruck:
+                  summary: Park vehicle and attached trailers
+                  value:
+                    data:
+                      - id: 42
+                        name: Truck-001
+                        type: Vehicle
+                        status: Parked
+                      - id: 43
+                        name: Trailer-001
+                        type: Trailer
+                        status: Parked
+                    changed: true
+                alreadyActive:
+                  summary: Activate when already Active
+                  value:
+                    data:
+                      - id: 42
+                        name: Truck-001
+                        type: Vehicle
+                        status: Active
+                    changed: false
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /groups:
     get:
       tags: [Groups]
       summary: List groups
       operationId: listGroups
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -195,7 +277,6 @@ paths:
       tags: [Templates]
       summary: List alert templates
       operationId: listTemplates
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -222,7 +303,6 @@ paths:
         Paginated devices in the API key company hierarchy (active devices).
         Optional `ids` filter; out-of-scope ids are omitted (not a 404).
       operationId: listDevices
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -266,7 +346,6 @@ paths:
         Paginated sensors in the API key company hierarchy (active sensors).
         Optional `ids` filter; out-of-scope ids are omitted (not a 404).
       operationId: listSensors
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -312,7 +391,6 @@ paths:
         Optional filters: `ids`, `severity`, `type`, `status`, `timeframe`,
         or `createdFrom` / `createdTo` (not with `timeframe`).
       operationId: listAlerts
-      x-implementation-status: live
       parameters:
         - $ref: "#/components/parameters/Ids"
         - name: severity
@@ -402,7 +480,6 @@ paths:
         Accept validated TPMS readings from external parties. Do not send `source`,
         `companyId`, or `apiKeyId` — those are set server-side from the API key.
       operationId: postExternalSensorReadings
-      x-implementation-status: live
       requestBody:
         required: true
         content:
@@ -423,7 +500,7 @@ paths:
                   rxPacketData: "88315D2090374718A4"
       responses:
         "202":
-          description: Accepted for fanout
+          description: Accepted
           content:
             application/json:
               schema:
@@ -501,6 +578,12 @@ components:
             message: Unauthorized
     Forbidden:
       description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    NotFound:
+      description: Resource missing or outside API key hierarchy
       content:
         application/json:
           schema:
@@ -610,6 +693,33 @@ components:
         pagination:
           $ref: "#/components/schemas/Pagination"
 
+    PatchUnitResultItem:
+      type: object
+      required: [id, name, type, status]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Vehicle, Trailer, Other]
+        status:
+          type: string
+          enum: [Active, Parked]
+
+    PatchUnitsResult:
+      type: object
+      required: [data, changed]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatchUnitResultItem"
+        changed:
+          type: boolean
+          description: False when the unit was already in the requested status
+
     TemplateThresholds:
       type: object
       properties:
@@ -684,59 +794,6 @@ components:
             $ref: "#/components/schemas/Template"
         pagination:
           $ref: "#/components/schemas/Pagination"
-
-    UnitRef:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-      description: Provide id and/or name
-
-    UnitStatusResponse:
-      type: object
-      properties:
-        unit:
-          type: object
-          properties:
-            id:
-              type: integer
-            name:
-              type: string
-            type:
-              type: string
-            status:
-              type: string
-            updatedOn:
-              type: string
-              format: date-time
-        device:
-          type: object
-          nullable: true
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            serial:
-              type: string
-            otherActiveUnits:
-              type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                  type:
-                    type: string
-                  status:
-                    type: string
-                  updatedOn:
-                    type: string
-                    format: date-time
 
     Group:
       type: object
