@@ -3,7 +3,16 @@ site_url: https://pressurepro.github.io/company-wiki/
 theme:
   name: material
   palette:
-    scheme: default
+    # Dark mode (default)
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Light mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
 plugins:
   - search
   - swagger-ui-tag
@@ -11,7 +20,6 @@ nav:
   - Home: index.md
   - Software Products:
     - Connect: software/connect.md
-    - Connect API: software/connect-api.md
     - External API (IQ): software/external-api/index.md
     - Driver TPMS: software/driver-tpms.md
     - Fleet Tech App: software/fleet-tech-app.md
@@ -30,4 +38,3 @@ nav:
   - Technical Resources:
     - FlexIO: technical-docs/flexio.md
     - UART-LNK: technical-docs/uart-lnk.md
-

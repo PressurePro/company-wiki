@@ -2,35 +2,25 @@ openapi: 3.0.3
 info:
   title: PressurePro IQ External API
   description: |
-    REST API for integrating with PressurePro IQ (epic [PHX-705](https://pressurepro.atlassian.net/browse/PHX-705)).
+    REST API for integrating with PressurePro IQ.
 
-    **Auth:** every secured route requires `Authorization: Bearer <external-api-key>`
-    (Phoenix Rapid external API keys / `pApiKey`). Tenant scope is inferred from the key —
-    do **not** pass an acting-as `companyId`.
+    **Auth:** every secured route requires `Authorization: Bearer <external-api-key>`.
+    Tenant scope is inferred from the key — do **not** pass an acting-as `companyId`.
 
     **Import into Bruno:** Collection → Import → OpenAPI → select this file.
     Set environment variables `baseUrl` and `bearerToken` (or edit the server URL + Auth).
 
-    **Scope:** this file documents **live** routes on the shared gateway only
-    (`IQ-External-API-STAGE` / `IQ-External-API-PROD`). Each operation is tagged
-    `x-implementation-status: live`. Unimplemented sprint stubs are tracked in
-    `services/External-API/*/README.md` and Jira — not listed here until deployed.
-
-    Spec sources: Confluence [PressurePro IQ API](https://pressurepro.atlassian.net/wiki/spaces/IQ/pages/344293377),
-    [Data Models](https://pressurepro.atlassian.net/wiki/spaces/IQ/pages/344260613),
-    [Pagination](https://pressurepro.atlassian.net/wiki/spaces/IQ/pages/344195077).
-
-    **Maintainers:** when adding or changing any External API endpoint, update **this file**
-    in the same PR (`services/External-API/openapi.yaml`).
+    **Scope:** this file documents **live** routes only. Each operation is tagged
+    `x-implementation-status: live`.
   version: 1.0.0
   contact:
     name: PressurePro Platform
 
 servers:
   - url: https://stg.api.pressurepro.us
-    description: Stage (IQ-External-API-STAGE)
+    description: Stage
   - url: https://prd.api.pressurepro.us
-    description: Production (IQ-External-API-PROD)
+    description: Production
 
 tags:
   - name: Health
@@ -59,8 +49,8 @@ paths:
   /health:
     get:
       tags: [Health]
-      summary: Gateway health (MOCK)
-      description: Unauthenticated MOCK on the shared gateway. Useful to confirm DNS / base path mapping.
+      summary: Gateway health
+      description: Unauthenticated health check. Useful to confirm the API is reachable.
       operationId: getHealth
       x-implementation-status: live
       security: []
@@ -81,11 +71,10 @@ paths:
       tags: [Company]
       summary: List companies
       description: |
-        Paginated list of companies accessible to the API key (authorizer company + descendants).
+        Paginated list of companies accessible to the API key (key company + descendants).
         Optional `ids` may select child companies in hierarchy (resource selection, not acting-as).
       operationId: listCompanies
       x-implementation-status: live
-      x-jira: PHX-706
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -134,7 +123,6 @@ paths:
         Only units with status Active or Parked are included.
       operationId: listUnits
       x-implementation-status: live
-      x-jira: PHX-708
       parameters:
         - $ref: "#/components/parameters/Ids"
         - name: status
@@ -184,7 +172,6 @@ paths:
       summary: List groups
       operationId: listGroups
       x-implementation-status: live
-      x-jira: PHX-719
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -209,7 +196,6 @@ paths:
       summary: List alert templates
       operationId: listTemplates
       x-implementation-status: live
-      x-jira: PHX-722
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -237,7 +223,6 @@ paths:
         Optional `ids` filter; out-of-scope ids are omitted (not a 404).
       operationId: listDevices
       x-implementation-status: live
-      x-jira: PHX-724
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -282,7 +267,6 @@ paths:
         Optional `ids` filter; out-of-scope ids are omitted (not a 404).
       operationId: listSensors
       x-implementation-status: live
-      x-jira: PHX-726
       parameters:
         - $ref: "#/components/parameters/Ids"
         - $ref: "#/components/parameters/Page"
@@ -329,7 +313,6 @@ paths:
         or `createdFrom` / `createdTo` (not with `timeframe`).
       operationId: listAlerts
       x-implementation-status: live
-      x-jira: PHX-730
       parameters:
         - $ref: "#/components/parameters/Ids"
         - name: severity
@@ -416,12 +399,10 @@ paths:
       tags: [Ingest]
       summary: Ingest TPMS sensor readings
       description: |
-        Accept validated TPMS readings from external parties. API Gateway validates the body;
-        the authorizer validates the bearer token; Lambda appends `source`, `companyId`, and
-        `apiKeyId`, then publishes to SNS. Clients must not send those appended fields.
+        Accept validated TPMS readings from external parties. Do not send `source`,
+        `companyId`, or `apiKeyId` — those are set server-side from the API key.
       operationId: postExternalSensorReadings
       x-implementation-status: live
-      x-jira: PHX-748
       requestBody:
         required: true
         content:
@@ -452,7 +433,7 @@ paths:
                     type: string
                     example: accepted
         "400":
-          description: Invalid body (API Gateway request validation)
+          description: Invalid body
           content:
             application/json:
               schema:
@@ -469,7 +450,7 @@ components:
       scheme: bearer
       bearerFormat: base64url
       description: |
-        Phoenix Rapid **external** API key token (base64url).
+        External API key token.
         Header: `Authorization: Bearer <token>`
 
   parameters:
@@ -519,7 +500,7 @@ components:
           example:
             message: Unauthorized
     Forbidden:
-      description: Authorizer denied (or cached policy mismatch)
+      description: Access denied
       content:
         application/json:
           schema:
