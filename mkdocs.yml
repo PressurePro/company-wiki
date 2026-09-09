@@ -4,11 +4,15 @@ theme:
   name: material
   palette:
     scheme: default
+plugins:
+  - search
+  - swagger-ui-tag
 nav:
   - Home: index.md
   - Software Products:
     - Connect: software/connect.md
     - Connect API: software/connect-api.md
+    - External API (IQ): software/external-api/index.md
     - Driver TPMS: software/driver-tpms.md
     - Fleet Tech App: software/fleet-tech-app.md
     - Changelogs:
