@@ -1,0 +1,968 @@
+openapi: 3.0.3
+info:
+  title: PressurePro IQ External API
+  description: |
+    REST API for integrating with PressurePro IQ.
+
+    **Auth:** every secured route requires `Authorization: Bearer <external-api-key>`.
+    Tenant scope is inferred from the key — do **not** pass an acting-as `companyId`.
+
+    **Import into Bruno:** Collection → Import → OpenAPI → select this file.
+    Set environment variables `baseUrl` and `bearerToken` (or edit the server URL + Auth).
+
+    **Scope:** this file documents **live** routes only. Each operation is tagged
+    `x-implementation-status: live`.
+  version: 1.0.0
+  contact:
+    name: PressurePro Platform
+
+servers:
+  - url: https://stg.api.pressurepro.us
+    description: Stage
+  - url: https://prd.api.pressurepro.us
+    description: Production
+
+tags:
+  - name: Health
+    description: Unauthenticated gateway probe
+  - name: Company
+    description: Company hierarchy within the API key scope
+  - name: Units
+    description: Fleet units (vehicles, trailers, other)
+  - name: Groups
+    description: Organizational groups
+  - name: Templates
+    description: Alert threshold templates
+  - name: Devices
+    description: FX / reader / tablet devices
+  - name: Sensors
+    description: TPMS sensors
+  - name: Alerts
+    description: Tire / signal alerts
+  - name: Ingest
+    description: External telemetry ingest
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Gateway health
+      description: Unauthenticated health check. Useful to confirm the API is reachable.
+      operationId: getHealth
+      x-implementation-status: live
+      security: []
+      responses:
+        "200":
+          description: Gateway reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /company:
+    get:
+      tags: [Company]
+      summary: List companies
+      description: |
+        Paginated list of companies accessible to the API key (key company + descendants).
+        Optional `ids` may select child companies in hierarchy (resource selection, not acting-as).
+      operationId: listCompanies
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated companies
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedCompanies"
+              example:
+                data:
+                  - id: 1001
+                    name: Acme Fleet
+                    parentId: null
+                    preferences:
+                      temperature-mode: F
+                      pressure-mode: PSI
+                      distance-mode: MILES
+                  - id: 1003
+                    name: North Division
+                    parentId: 1001
+                    preferences:
+                      temperature-mode: F
+                      pressure-mode: PSI
+                      distance-mode: MILES
+                pagination:
+                  page: 1
+                  pageSize: 50
+                  totalCount: 2
+                  totalPages: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /units:
+    get:
+      tags: [Units]
+      summary: List units
+      description: |
+        Paginated unit summaries in the API key hierarchy.
+        Only units with status Active or Parked are included.
+      operationId: listUnits
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, parked]
+          description: Optional status filter
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated unit summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUnitSummaries"
+              example:
+                data:
+                  - id: 42
+                    name: Truck-001
+                    type: Vehicle
+                    status: Active
+                    groupId: 10
+                    templateId: 5
+                    deviceSerial: "0000001"
+                    location:
+                      latitude: 40.7128
+                      longitude: -74.006
+                    activeAlertSeverity: none
+                pagination:
+                  page: 1
+                  pageSize: 50
+                  totalCount: 1
+                  totalPages: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /groups:
+    get:
+      tags: [Groups]
+      summary: List groups
+      operationId: listGroups
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedGroups"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /templates:
+    get:
+      tags: [Templates]
+      summary: List alert templates
+      operationId: listTemplates
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTemplates"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /devices:
+    get:
+      tags: [Devices]
+      summary: List devices
+      description: |
+        Paginated devices in the API key company hierarchy (active devices).
+        Optional `ids` filter; out-of-scope ids are omitted (not a 404).
+      operationId: listDevices
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated devices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedDevices"
+              example:
+                data:
+                  - id: 10
+                    companyId: 1001
+                    name: Yard Reader North
+                    type: yard_reader
+                    serialNumber: "0000001"
+                    lastSeenAt: "2026-01-15T14:00:00Z"
+                    inUse: true
+                    unitIds: [42, 43]
+                    createdOn: "2026-01-15T12:00:00Z"
+                    updatedOn: "2026-08-06T10:15:00Z"
+                pagination:
+                  page: 1
+                  pageSize: 50
+                  totalCount: 1
+                  totalPages: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /sensors:
+    get:
+      tags: [Sensors]
+      summary: List sensors
+      description: |
+        Paginated sensors in the API key company hierarchy (active sensors).
+        Optional `ids` filter; out-of-scope ids are omitted (not a 404).
+      operationId: listSensors
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated sensors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedSensors"
+              example:
+                data:
+                  - id: 101
+                    companyId: 1001
+                    serialNumber: A1B2C3
+                    unitId: 42
+                    unitName: Truck-001
+                    axle: 1
+                    tire: 1
+                    refPressure: 100
+                    lastReading: null
+                    createdOn: "2026-01-15T12:00:00Z"
+                    updatedOn: "2026-08-06T10:15:00Z"
+                pagination:
+                  page: 1
+                  pageSize: 50
+                  totalCount: 1
+                  totalPages: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /alerts:
+    get:
+      tags: [Alerts]
+      summary: List alerts
+      description: |
+        Paginated alert history in the API key hierarchy.
+        Optional filters: `ids`, `severity`, `type`, `status`, `timeframe`,
+        or `createdFrom` / `createdTo` (not with `timeframe`).
+      operationId: listAlerts
+      x-implementation-status: live
+      parameters:
+        - $ref: "#/components/parameters/Ids"
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Optional. Comma-separated (or repeated) severities:
+            `medium`, `high`, `critical`.
+          example: high,critical
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Optional. Comma-separated (or repeated) alert types:
+            `high-pressure`, `low-pressure`, `temperature`, `cross-axle-pressure`,
+            `cross-axle-temperature`, `lost-signal`.
+          example: low-pressure,temperature
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Optional. Comma-separated (or repeated) statuses:
+            `active`, `resolved`, `superseded`. Omit to include all.
+          example: active,resolved
+        - name: timeframe
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - LAST_HOUR
+              - LAST_4_HOURS
+              - LAST_12_HOURS
+              - LAST_24_HOURS
+              - LAST_7_DAYS
+          description: |
+            Optional relative lower bound on `createdOn` (server UTC now minus duration).
+            Cannot be combined with `createdFrom` or `createdTo`.
+          example: LAST_24_HOURS
+        - name: createdFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: |
+            Optional inclusive lower bound on `createdOn` (ISO-8601 or `YYYY-MM-DD`, UTC).
+            Cannot be combined with `timeframe`.
+          example: "2026-08-01T00:00:00Z"
+        - name: createdTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: |
+            Optional inclusive upper bound on `createdOn` (ISO-8601 or `YYYY-MM-DD`, UTC).
+            Cannot be combined with `timeframe`.
+          example: "2026-08-31T23:59:59Z"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+      responses:
+        "200":
+          description: Paginated alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAlerts"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /external/sensorReadings:
+    post:
+      tags: [Ingest]
+      summary: Ingest TPMS sensor readings
+      description: |
+        Accept validated TPMS readings from external parties. Do not send `source`,
+        `companyId`, or `apiKeyId` — those are set server-side from the API key.
+      operationId: postExternalSensorReadings
+      x-implementation-status: live
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorReadingRequest"
+            example:
+              timestamp: "2025-01-01T12:30:00Z"
+              latitude: 45.632158
+              longitude: -90.32546
+              deviceSerialNumber: R15334
+              tpms:
+                - sensorSerialNumber: F142CA
+                  pressure: 142
+                  temperature: 94
+                  rssi: 94
+                  ambRF: 21
+                  rxPacketData: "88315D2090374718A4"
+      responses:
+        "202":
+          description: Accepted for fanout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: accepted
+        "400":
+          description: Invalid body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: base64url
+      description: |
+        External API key token.
+        Header: `Authorization: Bearer <token>`
+
+  parameters:
+    Ids:
+      name: ids
+      in: query
+      required: false
+      schema:
+        type: string
+      description: |
+        Optional comma-separated ids (e.g. `1,2,3`). Repeated `ids` / `id` query params
+        may also be accepted by list handlers.
+      example: "1,2,3"
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 1-based page number
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Results per page (max 100)
+
+  responses:
+    BadRequest:
+      description: Invalid query or body
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+          example:
+            message: Unauthorized
+    Forbidden:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorMessage"
+
+  schemas:
+    ErrorMessage:
+      type: object
+      properties:
+        message:
+          type: string
+
+    Pagination:
+      type: object
+      required: [page, pageSize, totalCount, totalPages]
+      properties:
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 50
+        totalCount:
+          type: integer
+          example: 237
+        totalPages:
+          type: integer
+          example: 5
+
+    CompanyPreferences:
+      type: object
+      properties:
+        temperature-mode:
+          type: string
+          enum: [F, C]
+        pressure-mode:
+          type: string
+          enum: [PSI, BAR, KPA]
+        distance-mode:
+          type: string
+          enum: [MILES, KM]
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        parentId:
+          type: integer
+          nullable: true
+        preferences:
+          $ref: "#/components/schemas/CompanyPreferences"
+
+    PaginatedCompanies:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Company"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    UnitSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Vehicle, Trailer, Other]
+        status:
+          type: string
+          enum: [Active, Parked]
+        groupId:
+          type: integer
+        templateId:
+          type: integer
+        deviceSerial:
+          type: string
+          nullable: true
+        location:
+          type: object
+          nullable: true
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+        activeAlertSeverity:
+          type: string
+          enum: [none, medium, high, critical]
+
+    PaginatedUnitSummaries:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnitSummary"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    TemplateThresholds:
+      type: object
+      properties:
+        lowPressureThreshold:
+          type: integer
+        highPressureThreshold:
+          type: integer
+        crossAxlePressureThreshold:
+          type: integer
+        highTemperatureThreshold:
+          type: integer
+        crossAxleTemperatureThreshold:
+          type: integer
+        lostSignalTimeout:
+          type: integer
+
+    TemplateToggles:
+      type: object
+      properties:
+        lowPressureToggle:
+          type: boolean
+        highPressureToggle:
+          type: boolean
+        crossAxlePressureToggle:
+          type: boolean
+        highTemperatureToggle:
+          type: boolean
+        crossAxleTemperatureToggle:
+          type: boolean
+        lostSignalToggle:
+          type: boolean
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: integer
+        companyId:
+          type: integer
+        companyName:
+          type: string
+        templateName:
+          type: string
+        refPressure:
+          type: number
+        axleRefPressures:
+          type: array
+          items:
+            type: number
+        alertInterval:
+          type: integer
+        thresholds:
+          $ref: "#/components/schemas/TemplateThresholds"
+        toggles:
+          $ref: "#/components/schemas/TemplateToggles"
+        inUse:
+          type: boolean
+        createdOn:
+          type: string
+          format: date-time
+        updatedOn:
+          type: string
+          format: date-time
+
+    PaginatedTemplates:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Template"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    UnitRef:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      description: Provide id and/or name
+
+    UnitStatusResponse:
+      type: object
+      properties:
+        unit:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            type:
+              type: string
+            status:
+              type: string
+            updatedOn:
+              type: string
+              format: date-time
+        device:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            serial:
+              type: string
+            otherActiveUnits:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  type:
+                    type: string
+                  status:
+                    type: string
+                  updatedOn:
+                    type: string
+                    format: date-time
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: integer
+        companyId:
+          type: integer
+        companyName:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [group, terminal, lot, building]
+        location:
+          type: object
+          nullable: true
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+        inUse:
+          type: boolean
+        createdOn:
+          type: string
+          format: date-time
+        updatedOn:
+          type: string
+          format: date-time
+
+    PaginatedGroups:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Device:
+      type: object
+      properties:
+        id:
+          type: integer
+        companyId:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [fx, rs232, yard_reader, tablet, modem]
+        serialNumber:
+          type: string
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        inUse:
+          type: boolean
+          description: True when at least one active unit is assigned to this device
+        unitIds:
+          type: array
+          description: Ids of active units currently assigned to this device
+          items:
+            type: integer
+        createdOn:
+          type: string
+          format: date-time
+        updatedOn:
+          type: string
+          format: date-time
+
+    PaginatedDevices:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Device"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: integer
+        companyId:
+          type: integer
+          nullable: true
+        serialNumber:
+          type: string
+          description: 6-character hex serial
+        unitId:
+          type: integer
+          nullable: true
+        unitName:
+          type: string
+          nullable: true
+        axle:
+          type: integer
+          nullable: true
+        tire:
+          type: integer
+          nullable: true
+        refPressure:
+          type: integer
+        lastReading:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Most recent reading payload (shape may vary by source)
+        createdOn:
+          type: string
+          format: date-time
+          nullable: true
+        updatedOn:
+          type: string
+          format: date-time
+          nullable: true
+
+    PaginatedSensors:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sensor"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+        unitId:
+          type: integer
+        unitName:
+          type: string
+        sensorId:
+          type: integer
+          nullable: true
+        type:
+          type: string
+          enum:
+            - high-pressure
+            - low-pressure
+            - temperature
+            - cross-axle-pressure
+            - cross-axle-temperature
+            - lost-signal
+        severity:
+          type: string
+          enum: [none, medium, high, critical]
+        status:
+          type: string
+          enum: [active, resolved, superseded]
+        axle:
+          type: integer
+          nullable: true
+        createdOn:
+          type: string
+          format: date-time
+        updatedOn:
+          type: string
+          format: date-time
+
+    PaginatedAlerts:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    TpmsReading:
+      type: object
+      required:
+        - sensorSerialNumber
+        - pressure
+        - temperature
+        - rssi
+        - ambRF
+        - rxPacketData
+      properties:
+        sensorSerialNumber:
+          type: string
+        pressure:
+          type: number
+        temperature:
+          type: number
+        rssi:
+          type: number
+        ambRF:
+          type: number
+        rxPacketData:
+          type: string
+
+    SensorReadingRequest:
+      type: object
+      required:
+        - timestamp
+        - deviceSerialNumber
+        - tpms
+      properties:
+        timestamp:
+          type: string
+          description: Reading timestamp (ISO 8601 recommended)
+        latitude:
+          type: number
+        longitude:
+          type: number
+        deviceSerialNumber:
+          type: string
+        tpms:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/TpmsReading"

@@ -2,7 +2,7 @@
 
 This guide walks you through writing a Python script that reads raw PressurePro TPMS packets from an RS-232-to-Ethernet bridge and posts them to the IQ External API so readings appear in IQ.
 
-For the full endpoint reference (schemas, auth, and interactive Try-it-out), see the [External API (IQ)](../software/external-api/) docs.
+For the full endpoint reference (schemas, auth, and interactive Try-it-out), see the [External API (IQ)](../software/external-api/index.md) docs.
 
 ## What you need
 
@@ -293,5 +293,5 @@ Start on **stage** until you confirm readings appear correctly in IQ, then point
 
 ## Next steps
 
-- Exercise the same endpoint from the browser via the [External API (IQ)](../software/external-api/) Swagger UI (Authorize with your key).
+- Exercise the same endpoint from the browser via the [External API (IQ)](../software/external-api/index.md) Swagger UI (Authorize with your key).
 - Contact your PressurePro representative if you need a stage key, a production key, or a confirmed `deviceSerialNumber` for your installation.

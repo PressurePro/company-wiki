@@ -16,26 +16,34 @@ theme:
 plugins:
   - search
   - swagger-ui-tag
+
+# Empty or unfinished markdown under docs/ — keep files if useful as placeholders,
+# but do not publish them until they have content.
+exclude_docs: |
+  hardware/**
+# Nav lists only pages that exist with content. MkDocs does not hide missing
+# entries automatically — adding a path here before the .md exists creates a 404.
+# Keep planned stubs commented out until the page is ready to publish.
 nav:
   - Home: index.md
   - Software Products:
     - Connect: software/connect.md
     - External API (IQ): software/external-api/index.md
-    - Driver TPMS: software/driver-tpms.md
-    - Fleet Tech App: software/fleet-tech-app.md
-    - Changelogs:
-      - Connect Changelog: software/changelog/connect-changelog.md
-      - Driver TPMS Changelog: software/changelog/driver-tpms-changelog.md
-      - Fleet Tech App Changelog: software/changelog/fleet-tech-app-changelog.md
-  - Hardware Products:
-    - Gateway: hardware/gateway.md
-    - Sensors: hardware/sensors.md
-    - Cables:
-      - 202PD: hardware/cables/202pd.md
-      - Teltonika / Pulse: hardware/cables/teltonika-pulse.md
-      - Teltonika / 12-Pin: hardware/cables/teltonika-12pin.md
-    - Wifi Yard Reader: hardware/wifi-yard-reader.md
+    # - Driver TPMS: software/driver-tpms.md
+    # - Fleet Tech App: software/fleet-tech-app.md
+    # - Changelogs:
+    #   - Connect Changelog: software/changelog/connect-changelog.md
+    #   - Driver TPMS Changelog: software/changelog/driver-tpms-changelog.md
+    #   - Fleet Tech App Changelog: software/changelog/fleet-tech-app-changelog.md
+  # - Hardware Products:
+  #   - Gateway: hardware/gateway.md
+  #   - Sensors: hardware/sensors.md
+  #   - Cables:
+  #     - 202PD: hardware/cables/202pd.md
+  #     - Teltonika / Pulse: hardware/cables/teltonika-pulse.md
+  #     - Teltonika / 12-Pin: hardware/cables/teltonika-12pin.md
+  #   - Wifi Yard Reader: hardware/wifi-yard-reader.md
   - Technical Resources:
-    - FlexIO: technical-docs/flexio.md
-    - UART-LNK: technical-docs/uart-lnk.md
+    # - FlexIO: technical-docs/flexio.md
+    # - UART-LNK: technical-docs/uart-lnk.md
     - Sending TPMS Readings to IQ (Python): technical-docs/ingest-sensor-readings-python.md
